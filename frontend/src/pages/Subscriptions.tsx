@@ -98,9 +98,11 @@ export default function Subscriptions() {
       setLoading(true);
       const endpoint = isAdmin ? '/subscriptions' : '/subscriptions/my-subscriptions';
       const response = await api.get(endpoint);
-      setSubscriptions(response.data);
+      const data = Array.isArray(response.data) ? response.data : [];
+      setSubscriptions(data);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Erreur lors du chargement des abonnements');
+      setSubscriptions([]);
     } finally {
       setLoading(false);
     }
@@ -118,9 +120,11 @@ export default function Subscriptions() {
   const fetchUsers = async () => {
     try {
       const response = await api.get('/users');
-      setUsers(response.data);
+      const data = Array.isArray(response.data) ? response.data : [];
+      setUsers(data);
     } catch (error: any) {
       console.error('Erreur users:', error);
+      setUsers([]);
     }
   };
 
