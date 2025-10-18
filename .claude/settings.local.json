@@ -24,7 +24,13 @@
       "Bash(git init:*)",
       "Bash(git config:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(curl -s http://localhost:3000/api/subscriptions/statistics)",
+      "Bash(curl:*)",
+      "Bash(bash:*)"
     ],
     "deny": [],
     "ask": []
