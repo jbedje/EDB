@@ -1,0 +1,339 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Énumération des rôles
+enum UserRole {
+  ADMIN
+  COACH
+  APPRENANT
+}
+
+// Énumération des statuts d'utilisateur
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING
+}
+
+// Énumération des statuts de cohorte
+enum CohortStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+// Énumération des types de formation
+enum FormationType {
+  TRADING_BASICS
+  ADVANCED_TRADING
+  RISK_MANAGEMENT
+  TECHNICAL_ANALYSIS
+  FUNDAMENTAL_ANALYSIS
+  CUSTOM
+}
+
+// Énumération des statuts de coaching
+enum CoachingStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PENDING
+}
+
+// Énumération des types d'abonnement
+enum SubscriptionType {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+// Énumération des statuts d'abonnement
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PENDING_PAYMENT
+}
+
+// Énumération des statuts de paiement
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+// Énumération des méthodes de paiement
+enum PaymentMethod {
+  CINETPAY
+  ORANGE_MONEY
+  WAVE
+  BANK_TRANSFER
+}
+
+// Énumération des types de notification
+enum NotificationType {
+  EMAIL
+  SMS
+  IN_APP
+}
+
+// Énumération des statuts de notification
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  READ
+}
+
+// ============= MODÈLES =============
+
+// Modèle Utilisateur
+model User {
+  id                String         @id @default(uuid())
+  email             String         @unique
+  password          String
+  firstName         String
+  lastName          String
+  phone             String?
+  role              UserRole       @default(APPRENANT)
+  status            UserStatus     @default(PENDING)
+  emailVerified     Boolean        @default(false)
+  phoneVerified     Boolean        @default(false)
+  avatar            String?
+  bio               String?
+  loginAttempts     Int            @default(0)
+  lockedUntil       DateTime?
+  lastLoginAt       DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  // Relations
+  cohortMemberships CohortMember[]
+  coachingSessions  CoachingSession[] @relation("CoachingSessions")
+  coachingAsCoach   CoachingSession[] @relation("CoachingAsCoach")
+  subscriptions     Subscription[]
+  payments          Payment[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  refreshTokens     RefreshToken[]
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
+  @@map("users")
+}
+
+// Modèle Token de rafraîchissement
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+// Modèle Cohorte
+model Cohort {
+  id          String        @id @default(uuid())
+  name        String
+  description String?
+  type        FormationType
+  status      CohortStatus  @default(DRAFT)
+  startDate   DateTime
+  endDate     DateTime?
+  maxStudents Int?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  members  CohortMember[]
+  sessions CoachingSession[]
+
+  @@index([status])
+  @@index([type])
+  @@index([startDate])
+  @@map("cohorts")
+}
+
+// Modèle Membre de Cohorte
+model CohortMember {
+  id         String   @id @default(uuid())
+  cohortId   String
+  userId     String
+  enrolledAt DateTime @default(now())
+  completedAt DateTime?
+  progress   Int      @default(0) // Pourcentage de progression
+  notes      String?
+
+  // Relations
+  cohort Cohort @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([cohortId, userId])
+  @@index([cohortId])
+  @@index([userId])
+  @@map("cohort_members")
+}
+
+// Modèle Session de Coaching
+model CoachingSession {
+  id              String         @id @default(uuid())
+  userId          String
+  cohortId        String?
+  coachId         String?
+  status          CoachingStatus @default(PENDING)
+  startDate       DateTime
+  endDate         DateTime
+  isFree          Boolean        @default(true) // true = coaching gratuit de 3 mois
+  sessionCount    Int            @default(0)
+  maxSessions     Int?
+  notes           String?
+  feedbackFromCoach String?
+  feedbackFromUser  String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  user   User    @relation("CoachingSessions", fields: [userId], references: [id], onDelete: Cascade)
+  coach  User?   @relation("CoachingAsCoach", fields: [coachId], references: [id], onDelete: SetNull)
+  cohort Cohort? @relation(fields: [cohortId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([coachId])
+  @@index([cohortId])
+  @@index([status])
+  @@index([endDate])
+  @@map("coaching_sessions")
+}
+
+// Modèle Abonnement
+model Subscription {
+  id              String             @id @default(uuid())
+  userId          String
+  type            SubscriptionType
+  status          SubscriptionStatus @default(PENDING_PAYMENT)
+  price           Decimal            @db.Decimal(10, 2)
+  currency        String             @default("XOF") // Franc CFA
+  startDate       DateTime
+  endDate         DateTime
+  autoRenew       Boolean            @default(false)
+  cancelledAt     DateTime?
+  cancellationReason String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([endDate])
+  @@map("subscriptions")
+}
+
+// Modèle Paiement
+model Payment {
+  id                String        @id @default(uuid())
+  userId            String
+  subscriptionId    String?
+  amount            Decimal       @db.Decimal(10, 2)
+  currency          String        @default("XOF")
+  method            PaymentMethod
+  status            PaymentStatus @default(PENDING)
+  transactionId     String?       @unique
+  providerReference String?
+  metadata          Json?
+  failureReason     String?
+  paidAt            DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  // Relations
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([transactionId])
+  @@map("payments")
+}
+
+// Modèle Notification
+model Notification {
+  id        String             @id @default(uuid())
+  userId    String
+  type      NotificationType
+  status    NotificationStatus @default(PENDING)
+  title     String
+  message   String
+  data      Json?
+  sentAt    DateTime?
+  readAt    DateTime?
+  createdAt DateTime           @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+  @@map("notifications")
+}
+
+// Modèle Log d'Audit
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  action     String // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, etc.
+  entity     String // User, Cohort, Payment, etc.
+  entityId   String?
+  changes    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([entity])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// Modèle Paramètres Système
+model SystemSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  type      String   @default("string") // string, number, boolean, json
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+  @@map("system_settings")
+}
