@@ -13,6 +13,8 @@ import Subscriptions from './pages/Subscriptions';
 import Payments from './pages/Payments';
 import Users from './pages/Users';
 import Reports from './pages/Reports';
+import Notifications from './pages/Notifications';
+import Plans from './pages/Plans';
 
 // Layout
 import Layout from './components/Layout';
@@ -54,6 +56,8 @@ function App() {
             <Route path="payments" element={<Payments />} />
             <Route path="users" element={<Users />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="notifications" element={<Notifications />} />
+            <Route path="plans" element={<Plans />} />
           </Route>
 
           {/* Catch all */}
