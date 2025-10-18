@@ -34,9 +34,10 @@ export default function Users() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [formData, setFormData] = useState({
-    firstName: '', lastName: '', email: '', phone: '', bio: '', role: 'APPRENANT',
+    firstName: '', lastName: '', email: '', phone: '', bio: '', role: 'APPRENANT', password: '',
   });
 
   useEffect(() => { fetchUsers(); }, []);
@@ -68,11 +69,44 @@ export default function Users() {
     setFilteredUsers(filtered);
   };
 
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+      toast.error('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+    try {
+      await api.post('/auth/register', {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+        phone: formData.phone || undefined,
+      });
+      toast.success('Utilisateur créé avec succès');
+      setShowCreateModal(false);
+      setFormData({ firstName: '', lastName: '', email: '', phone: '', bio: '', role: 'APPRENANT', password: '' });
+      fetchUsers();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Erreur lors de la création');
+    }
+  };
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser) return;
     try {
-      await api.put(`/users/${selectedUser.id}`, formData);
+      const updateData: any = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        role: formData.role,
+      };
+      if (formData.phone) updateData.phone = formData.phone;
+      if (formData.bio) updateData.bio = formData.bio;
+
+      await api.put(`/users/${selectedUser.id}`, updateData);
       toast.success('Utilisateur mis à jour');
       setShowEditModal(false);
       fetchUsers();
@@ -119,7 +153,20 @@ export default function Users() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Utilisateurs</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Utilisateurs</h1>
+          <p className="text-gray-600 mt-1">Gérez les utilisateurs de la plateforme</p>
+        </div>
+        <button
+          onClick={() => {
+            setFormData({ firstName: '', lastName: '', email: '', phone: '', bio: '', role: 'APPRENANT', password: '' });
+            setShowCreateModal(true);
+          }}
+          className="btn btn-primary flex items-center gap-2"
+        >
+          <User size={20} />
+          Nouvel utilisateur
+        </button>
       </div>
 
       <div className="card mb-6">
@@ -341,6 +388,65 @@ export default function Users() {
               <div className="flex gap-4 pt-4">
                 <button type="submit" className="flex-1 btn btn-primary">Mettre à jour</button>
                 <button type="button" onClick={() => setShowEditModal(false)} className="flex-1 btn btn-secondary">Annuler</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold">Créer un utilisateur</h2>
+              <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={24} />
+              </button>
+            </div>
+            <form onSubmit={handleCreate} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Prénom *</label>
+                  <input type="text" required value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} className="input" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nom *</label>
+                  <input type="text" required value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} className="input" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                <input type="email" required value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="input" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Mot de passe *</label>
+                <input type="password" required value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="input"
+                  placeholder="Minimum 8 caractères"
+                  minLength={8} />
+                <p className="text-xs text-gray-500 mt-1">Minimum 8 caractères, avec majuscule, chiffre et caractère spécial</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Téléphone</label>
+                <input type="tel" value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="input" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Rôle *</label>
+                <select required value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })} className="input">
+                  {Object.entries(USER_ROLES).map(([key, label]) => (
+                    <option key={key} value={key}>{label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-4 pt-4">
+                <button type="submit" className="flex-1 btn btn-primary">Créer l'utilisateur</button>
+                <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 btn btn-secondary">Annuler</button>
               </div>
             </form>
           </div>

@@ -120,8 +120,11 @@ export default function Subscriptions() {
   const fetchUsers = async () => {
     try {
       const response = await api.get('/users');
-      const data = Array.isArray(response.data) ? response.data : [];
-      setUsers(data);
+      // L'API retourne { success: true, data: [...] }
+      const data = response.data.data || response.data || [];
+      const users = Array.isArray(data) ? data : [];
+      setUsers(users);
+      console.log('Users chargés:', users.length);
     } catch (error: any) {
       console.error('Erreur users:', error);
       setUsers([]);
