@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import {
-  Users as UsersIcon, User, Search, Edit, Trash2, Shield, UserCheck, UserX,
-  Filter, Eye, X, Mail, Phone, Calendar, Award,
+  Users as UsersIcon, User, Search, Edit, Trash2, UserCheck, UserX,
+  Eye, X, Mail,
 } from 'lucide-react';
 import api from '../lib/api';
 import { useAuthStore } from '../stores/authStore';
@@ -141,7 +141,7 @@ export default function Users() {
     setSelectedUser(userData);
     setFormData({
       firstName: userData.firstName, lastName: userData.lastName, email: userData.email,
-      phone: userData.phone || '', bio: userData.bio || '', role: userData.role,
+      phone: userData.phone || '', bio: userData.bio || '', role: userData.role, password: '',
     });
     setShowEditModal(true);
   };

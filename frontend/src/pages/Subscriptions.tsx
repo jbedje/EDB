@@ -120,13 +120,17 @@ export default function Subscriptions() {
   const fetchUsers = async () => {
     try {
       const response = await api.get('/users');
-      // L'API retourne { success: true, data: [...] }
-      const data = response.data.data || response.data || [];
-      const users = Array.isArray(data) ? data : [];
-      setUsers(users);
-      console.log('Users chargés:', users.length);
+      console.log('Response complète:', response);
+      console.log('Response.data:', response.data);
+      console.log('Type de response.data:', Array.isArray(response.data) ? 'array' : typeof response.data);
+
+      // L'API /users retourne directement un tableau d'utilisateurs
+      const data = Array.isArray(response.data) ? response.data : (response.data.data || []);
+      setUsers(data);
+      console.log('Users chargés:', data.length, data);
     } catch (error: any) {
-      console.error('Erreur users:', error);
+      console.error('Erreur fetchUsers:', error);
+      console.error('Error response:', error.response?.data);
       setUsers([]);
     }
   };
