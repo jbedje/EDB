@@ -18,6 +18,10 @@ import Notifications from './pages/Notifications';
 import Plans from './pages/Plans';
 import Profile from './pages/Profile';
 
+// Learner Pages
+import AvailablePlans from './pages/AvailablePlans';
+import MyPayments from './pages/MyPayments';
+
 // Coach Pages
 import MesCohortes from './pages/coach/MesCohortes';
 import Planning from './pages/coach/Planning';
@@ -68,6 +72,10 @@ function App() {
             <Route path="notifications" element={<Notifications />} />
             <Route path="plans" element={<Plans />} />
             <Route path="profile" element={<Profile />} />
+
+            {/* Learner Routes */}
+            <Route path="available-plans" element={<AvailablePlans />} />
+            <Route path="my-payments" element={<MyPayments />} />
 
             {/* Coach Routes */}
             <Route path="mes-cohortes" element={<MesCohortes />} />

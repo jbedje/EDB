@@ -118,6 +118,7 @@ export default function Cohorts() {
   const [selectedUserId, setSelectedUserId] = useState('');
 
   const isAdmin = user?.role === 'ADMIN';
+  const isApprenant = user?.role === 'APPRENANT';
 
   useEffect(() => {
     fetchCohorts();
@@ -130,7 +131,9 @@ export default function Cohorts() {
   const fetchCohorts = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/cohorts');
+      // Les apprenants ne voient que leurs cohortes, les admins voient toutes les cohortes
+      const endpoint = isApprenant ? '/cohorts/my-cohorts' : '/cohorts';
+      const response = await api.get(endpoint);
       setCohorts(response.data.data);
     } catch (error: any) {
       toast.error('Erreur lors du chargement des cohortes');
