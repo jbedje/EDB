@@ -17,6 +17,12 @@ import Notifications from './pages/Notifications';
 import Plans from './pages/Plans';
 import Profile from './pages/Profile';
 
+// Coach Pages
+import MesCohortes from './pages/coach/MesCohortes';
+import Planning from './pages/coach/Planning';
+import SuiviApprenants from './pages/coach/SuiviApprenants';
+import RapportsCoach from './pages/coach/Rapports';
+
 // Layout
 import Layout from './components/Layout';
 
@@ -60,6 +66,12 @@ function App() {
             <Route path="notifications" element={<Notifications />} />
             <Route path="plans" element={<Plans />} />
             <Route path="profile" element={<Profile />} />
+
+            {/* Coach Routes */}
+            <Route path="mes-cohortes" element={<MesCohortes />} />
+            <Route path="planning" element={<Planning />} />
+            <Route path="suivi-apprenants" element={<SuiviApprenants />} />
+            <Route path="rapports-coach" element={<RapportsCoach />} />
           </Route>
 
           {/* Catch all */}

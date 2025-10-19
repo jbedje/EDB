@@ -17,6 +17,9 @@ import {
   TrendingDown,
   FileText,
   Bell,
+  CreditCard,
+  Search,
+  ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -459,26 +462,241 @@ export default function Dashboard() {
       )}
 
       {user?.role === 'COACH' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <StatCard
-            icon={Users}
-            title="Mes apprenants"
-            value={dashboardData?.totalStudents || 0}
-            color="blue"
-          />
-          <StatCard
-            icon={MessageCircle}
-            title="Sessions actives"
-            value={dashboardData?.activeSessions?.length || 0}
-            color="green"
-          />
-          <StatCard
-            icon={BookOpen}
-            title="Cohortes"
-            value={dashboardData?.cohorts?.length || 0}
-            color="purple"
-          />
-        </div>
+        <>
+          {/* KPIs Coach */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <KPICard
+              icon={BookOpen}
+              title="Cohortes actives"
+              value={dashboardData?.activeCohortsCount || 0}
+              color="blue"
+            />
+            <KPICard
+              icon={Users}
+              title="Coaching gratuit"
+              value={dashboardData?.freeCoachingCount || 0}
+              color="purple"
+            />
+            <KPICard
+              icon={Clock}
+              title="Échéances (14j)"
+              value={dashboardData?.upcomingDeadlines14 || 0}
+              color="gold"
+            />
+            <KPICard
+              icon={TrendingUp}
+              title="Taux de conversion"
+              value={`${dashboardData?.coachConversionRate || 0}%`}
+              color="green"
+            />
+          </div>
+
+          {/* Recherche rapide */}
+          <div className="card mb-6">
+            <div className="flex items-center gap-3">
+              <Search size={20} className="text-gray-400" />
+              <input
+                type="text"
+                placeholder="Rechercher un apprenant (nom, email)..."
+                className="flex-1 outline-none text-gray-900"
+              />
+              <button className="btn btn-primary">Rechercher</button>
+            </div>
+          </div>
+
+          {/* Grille principale */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Mes Cohortes */}
+            <div className="card">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <BookOpen size={20} className="text-primary-600" />
+                Mes cohortes
+              </h2>
+              <div className="space-y-3">
+                {dashboardData?.myCohortes && dashboardData.myCohortes.length > 0 ? (
+                  dashboardData.myCohortes.map((cohort: any) => (
+                    <div
+                      key={cohort.id}
+                      className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h3 className="font-bold text-lg text-blue-900">{cohort.label}</h3>
+                          <p className="text-sm text-blue-700">
+                            {formatDate(cohort.startDate)} - {formatDate(cohort.endDate)}
+                          </p>
+                        </div>
+                        <span className="text-xs px-2 py-1 rounded-full bg-blue-200 text-blue-800 font-medium">
+                          {cohort.enrollmentCount} apprenants
+                        </span>
+                      </div>
+
+                      {/* Barre de progression coaching */}
+                      <div className="mb-3">
+                        <div className="flex justify-between text-xs text-blue-700 mb-1">
+                          <span>Coaching en cours</span>
+                          <span>{cohort.coachingProgress || 0}%</span>
+                        </div>
+                        <div className="w-full bg-blue-200 rounded-full h-2">
+                          <div
+                            className="bg-blue-600 h-2 rounded-full transition-all"
+                            style={{ width: `${cohort.coachingProgress || 0}%` }}
+                          ></div>
+                        </div>
+                      </div>
+
+                      <button className="w-full btn btn-primary text-sm">
+                        Voir les détails
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center py-8">Aucune cohorte assignée</p>
+                )}
+              </div>
+            </div>
+
+            {/* Échéances à venir */}
+            <div className="card">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <Clock size={20} className="text-primary-600" />
+                Échéances à venir
+              </h2>
+              <div className="space-y-2">
+                {dashboardData?.upcomingDeadlines && dashboardData.upcomingDeadlines.length > 0 ? (
+                  dashboardData.upcomingDeadlines.map((deadline: any) => (
+                    <div
+                      key={deadline.studentId}
+                      className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">{deadline.studentName}</p>
+                          <p className="text-sm text-gray-600">{deadline.email}</p>
+                        </div>
+                        <div className="text-right">
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full font-medium ${
+                              deadline.daysRemaining <= 1
+                                ? 'bg-red-100 text-red-800'
+                                : deadline.daysRemaining <= 7
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-blue-100 text-blue-800'
+                            }`}
+                          >
+                            J-{deadline.daysRemaining}
+                          </span>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {formatDate(deadline.endDate)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center py-8">Aucune échéance à venir</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Planning & Conversion */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Planning à 7 jours */}
+            <div className="card">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <Calendar size={20} className="text-primary-600" />
+                Planning à 7 jours
+              </h2>
+              <div className="space-y-3">
+                {dashboardData?.upcomingSessions && dashboardData.upcomingSessions.length > 0 ? (
+                  dashboardData.upcomingSessions.map((session: any, index: number) => (
+                    <div
+                      key={index}
+                      className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900">{session.title}</h3>
+                          <p className="text-sm text-gray-600">{session.cohortLabel}</p>
+                        </div>
+                        <span className="text-xs px-2 py-1 rounded-full bg-primary-100 text-primary-800">
+                          {session.date}
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        {session.zoomLink && (
+                          <a
+                            href={session.zoomLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-sm text-primary-600 hover:text-primary-900"
+                          >
+                            <ExternalLink size={14} />
+                            Zoom
+                          </a>
+                        )}
+                        {session.whatsappLink && (
+                          <a
+                            href={session.whatsappLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-sm text-green-600 hover:text-green-900"
+                          >
+                            <ExternalLink size={14} />
+                            WhatsApp
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center py-8">Aucune session planifiée</p>
+                )}
+              </div>
+            </div>
+
+            {/* Conversion par cohorte */}
+            <div className="card">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <TrendingUp size={20} className="text-primary-600" />
+                Conversion par cohorte
+              </h2>
+              <div className="space-y-4">
+                {dashboardData?.cohortConversions && dashboardData.cohortConversions.length > 0 ? (
+                  dashboardData.cohortConversions.map((cohort: any) => (
+                    <div key={cohort.id} className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-700">{cohort.label}</span>
+                        <span className="text-lg font-bold text-primary-600">
+                          {cohort.conversionRate}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div
+                          className={`h-3 rounded-full ${
+                            cohort.conversionRate >= 50
+                              ? 'bg-green-500'
+                              : cohort.conversionRate >= 30
+                              ? 'bg-yellow-500'
+                              : 'bg-red-500'
+                          }`}
+                          style={{ width: `${cohort.conversionRate}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-600">
+                        <span>{cohort.freeCount} gratuit</span>
+                        <span>{cohort.paidCount} payants</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center py-8">Aucune donnée de conversion</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {user?.role === 'APPRENANT' && (
@@ -777,14 +995,6 @@ export default function Dashboard() {
         </>
       )}
 
-      {user?.role === 'COACH' && (
-        <div className="card">
-          <h2 className="text-xl font-semibold mb-4">Bienvenue sur EDB</h2>
-          <p className="text-gray-600">
-            Votre plateforme de gestion de formation en trading et investissement.
-          </p>
-        </div>
-      )}
     </div>
   );
 }

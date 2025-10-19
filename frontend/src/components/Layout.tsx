@@ -1,6 +1,6 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { Home, Users, BookOpen, MessageCircle, CreditCard, DollarSign, FileText, LogOut, Menu } from 'lucide-react';
+import { Home, Users, BookOpen, MessageCircle, CreditCard, DollarSign, FileText, LogOut, Menu, Calendar, ClipboardList, UserCheck, BarChart3, Bell, Settings } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Layout() {
@@ -15,12 +15,29 @@ export default function Layout() {
 
   const menuItems = [
     { icon: Home, label: 'Tableau de bord', path: '/app', roles: ['ADMIN', 'COACH', 'APPRENANT'] },
-    { icon: BookOpen, label: 'Cohortes', path: '/app/cohorts', roles: ['ADMIN', 'COACH', 'APPRENANT'] },
-    { icon: MessageCircle, label: 'Coaching', path: '/app/coaching', roles: ['ADMIN', 'COACH', 'APPRENANT'] },
-    { icon: CreditCard, label: 'Abonnements', path: '/app/subscriptions', roles: ['ADMIN', 'APPRENANT'] },
-    { icon: DollarSign, label: 'Paiements', path: '/app/payments', roles: ['ADMIN', 'APPRENANT'] },
+
+    // Admin menus
+    { icon: BookOpen, label: 'Cohortes', path: '/app/cohorts', roles: ['ADMIN'] },
+    { icon: MessageCircle, label: 'Coaching', path: '/app/coaching', roles: ['ADMIN'] },
+    { icon: CreditCard, label: 'Abonnements', path: '/app/subscriptions', roles: ['ADMIN'] },
+    { icon: DollarSign, label: 'Paiements', path: '/app/payments', roles: ['ADMIN'] },
     { icon: Users, label: 'Utilisateurs', path: '/app/users', roles: ['ADMIN'] },
     { icon: FileText, label: 'Rapports', path: '/app/reports', roles: ['ADMIN'] },
+    { icon: Bell, label: 'Notifications', path: '/app/notifications', roles: ['ADMIN'] },
+    { icon: Settings, label: 'Plans', path: '/app/plans', roles: ['ADMIN'] },
+
+    // Coach menus
+    { icon: BookOpen, label: 'Mes cohortes', path: '/app/mes-cohortes', roles: ['COACH'] },
+    { icon: Calendar, label: 'Planning', path: '/app/planning', roles: ['COACH'] },
+    { icon: UserCheck, label: 'Suivi apprenants', path: '/app/suivi-apprenants', roles: ['COACH'] },
+    { icon: BarChart3, label: 'Rapports', path: '/app/rapports-coach', roles: ['COACH'] },
+
+    // Apprenant menus
+    { icon: BookOpen, label: 'Ma cohorte', path: '/app/cohorts', roles: ['APPRENANT'] },
+    { icon: MessageCircle, label: 'Mon coaching', path: '/app/coaching', roles: ['APPRENANT'] },
+    { icon: CreditCard, label: 'Mon abonnement', path: '/app/subscriptions', roles: ['APPRENANT'] },
+    { icon: DollarSign, label: 'Mes paiements', path: '/app/payments', roles: ['APPRENANT'] },
+    { icon: Users, label: 'Mon profil', path: '/app/profile', roles: ['APPRENANT'] },
   ];
 
   const filteredMenuItems = menuItems.filter(item =>
