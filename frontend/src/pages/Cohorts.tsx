@@ -26,11 +26,18 @@ interface Cohort {
   startDate: string;
   endDate: string | null;
   maxStudents: number | null;
+  coachId: string | null;
   createdAt: string;
   _count?: {
     members: number;
   };
   members?: CohortMember[];
+  coach?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  } | null;
 }
 
 interface CohortMember {
@@ -107,6 +114,7 @@ export default function Cohorts() {
 
   // Members management
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [availableCoaches, setAvailableCoaches] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState('');
 
   const isAdmin = user?.role === 'ADMIN';
