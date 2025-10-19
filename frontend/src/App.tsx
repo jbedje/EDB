@@ -15,6 +15,7 @@ import Users from './pages/Users';
 import Reports from './pages/Reports';
 import Notifications from './pages/Notifications';
 import Plans from './pages/Plans';
+import Profile from './pages/Profile';
 
 // Layout
 import Layout from './components/Layout';
@@ -58,6 +59,7 @@ function App() {
             <Route path="reports" element={<Reports />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="plans" element={<Plans />} />
+            <Route path="profile" element={<Profile />} />
           </Route>
 
           {/* Catch all */}

@@ -482,29 +482,302 @@ export default function Dashboard() {
       )}
 
       {user?.role === 'APPRENANT' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <StatCard
-            icon={BookOpen}
-            title="Mes cohortes"
-            value={dashboardData?.cohorts?.length || 0}
-            color="blue"
-          />
-          <StatCard
-            icon={TrendingUp}
-            title="Progression moyenne"
-            value={`${Math.round(dashboardData?.averageProgress || 0)}%`}
-            color="green"
-          />
-          <StatCard
-            icon={MessageCircle}
-            title="Coaching"
-            value={dashboardData?.activeCoaching ? 'Actif' : 'Inactif'}
-            color="purple"
-          />
-        </div>
+        <>
+          {/* KPIs Apprenant */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <KPICard
+              icon={Clock}
+              title="Coaching gratuit"
+              value={dashboardData?.coachingDaysRemaining !== undefined
+                ? `J-${dashboardData.coachingDaysRemaining}`
+                : 'Inactif'}
+              color={dashboardData?.coachingDaysRemaining && dashboardData.coachingDaysRemaining < 14 ? 'red' : 'purple'}
+            />
+            <KPICard
+              icon={CheckCircle}
+              title="Statut abonnement"
+              value={dashboardData?.subscriptionStatus || 'Aucun'}
+              color={dashboardData?.subscriptionStatus === 'ACTIVE' ? 'green' : 'gold'}
+            />
+            <KPICard
+              icon={Calendar}
+              title="Prochaine échéance"
+              value={dashboardData?.nextDueDate
+                ? new Date(dashboardData.nextDueDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+                : '-'}
+              color="blue"
+            />
+            <KPICard
+              icon={DollarSign}
+              title="Total payé (12 mois)"
+              value={formatCurrency(dashboardData?.totalPaid12Months || 0)}
+              color="teal"
+              valueSize="sm"
+            />
+          </div>
+
+          {/* Grille principale apprenants */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Ma Cohorte */}
+            <div className="card">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <BookOpen size={20} className="text-primary-600" />
+                Ma cohorte
+              </h2>
+              {dashboardData?.myCohort ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-primary-50 rounded-lg">
+                    <h3 className="font-bold text-lg text-primary-900 mb-2">
+                      {dashboardData.myCohort.label}
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <Calendar size={16} className="text-primary-600" />
+                        <span>
+                          Du {formatDate(dashboardData.myCohort.startDate)} au {formatDate(dashboardData.myCohort.endDate)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <Award size={16} className="text-primary-600" />
+                        <span>Coach: {dashboardData.myCohort.coachName}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <Users size={16} className="text-primary-600" />
+                        <span>{dashboardData.myCohort.participants} participants</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {dashboardData.myCohort.zoomLinks && dashboardData.myCohort.zoomLinks.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Sessions de coaching</h4>
+                      <div className="space-y-2">
+                        {dashboardData.myCohort.zoomLinks.map((link: any, index: number) => (
+                          <a
+                            key={index}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                          >
+                            <div>
+                              <p className="font-medium text-gray-900">{link.title}</p>
+                              <p className="text-sm text-gray-600">{link.date}</p>
+                            </div>
+                            <TrendingUp size={16} className="text-primary-600" />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-8">Aucune cohorte assignée</p>
+              )}
+            </div>
+
+            {/* Mon Coaching */}
+            <div className="card">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <MessageCircle size={20} className="text-primary-600" />
+                Mon coaching gratuit
+              </h2>
+              {dashboardData?.myCoaching ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">Statut</span>
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        dashboardData.myCoaching.isActive
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      {dashboardData.myCoaching.isActive ? 'Actif' : 'Expiré'}
+                    </span>
+                  </div>
+
+                  {/* Timeline */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>Début</span>
+                      <span>Aujourd'hui</span>
+                      <span>Fin</span>
+                    </div>
+                    <div className="relative">
+                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${
+                            dashboardData.myCoaching.progress >= 90
+                              ? 'bg-red-500'
+                              : dashboardData.myCoaching.progress >= 70
+                              ? 'bg-yellow-500'
+                              : 'bg-green-500'
+                          }`}
+                          style={{ width: `${dashboardData.myCoaching.progress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>{formatDate(dashboardData.myCoaching.startDate)}</span>
+                      <span className="font-bold text-primary-600">
+                        {dashboardData.coachingDaysRemaining} jours restants
+                      </span>
+                      <span>{formatDate(dashboardData.myCoaching.endDate)}</span>
+                    </div>
+                  </div>
+
+                  {dashboardData.coachingDaysRemaining && dashboardData.coachingDaysRemaining <= 14 && (
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm text-yellow-800">
+                        ⚠️ Votre coaching gratuit expire bientôt ! Pensez à souscrire un abonnement.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-8">Aucun coaching actif</p>
+              )}
+            </div>
+          </div>
+
+          {/* Mes Abonnements & Paiements */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Mon Abonnement */}
+            <div className="card">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <CreditCard size={20} className="text-primary-600" />
+                Mon abonnement
+              </h2>
+              {dashboardData?.mySubscription ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg border border-primary-200">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="font-bold text-lg text-primary-900">
+                          {dashboardData.mySubscription.planName}
+                        </h3>
+                        <p className="text-sm text-primary-700">{dashboardData.mySubscription.type}</p>
+                      </div>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          dashboardData.mySubscription.status === 'ACTIVE'
+                            ? 'bg-green-100 text-green-800'
+                            : dashboardData.mySubscription.status === 'EXPIRED'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}
+                      >
+                        {dashboardData.mySubscription.status}
+                      </span>
+                    </div>
+
+                    <div className="text-3xl font-bold text-primary-900 mb-2">
+                      {formatCurrency(dashboardData.mySubscription.price)}
+                    </div>
+
+                    {dashboardData.mySubscription.features && (
+                      <ul className="space-y-1 mb-4">
+                        {dashboardData.mySubscription.features.slice(0, 3).map((feature: string, index: number) => (
+                          <li key={index} className="text-sm text-primary-800 flex items-center gap-2">
+                            <CheckCircle size={14} className="text-primary-600" />
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    <div className="text-sm text-primary-700">
+                      Renouvellement: {formatDate(dashboardData.mySubscription.renewDate)}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button className="flex-1 btn btn-primary text-sm">
+                      Renouveler
+                    </button>
+                    <button className="flex-1 btn btn-secondary text-sm">
+                      Changer de plan
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 mb-4">Aucun abonnement actif</p>
+                  <button className="btn btn-primary">Choisir un plan</button>
+                </div>
+              )}
+            </div>
+
+            {/* Mes Paiements */}
+            <div className="card">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <DollarSign size={20} className="text-primary-600" />
+                Mes paiements récents
+              </h2>
+              {dashboardData?.recentPayments && dashboardData.recentPayments.length > 0 ? (
+                <div className="space-y-3">
+                  {dashboardData.recentPayments.map((payment: any) => (
+                    <div key={payment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-gray-900">{formatCurrency(payment.amount)}</span>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full ${
+                              payment.status === 'COMPLETED'
+                                ? 'bg-green-100 text-green-800'
+                                : payment.status === 'PENDING'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {payment.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-600">
+                          {formatDate(payment.date)} • {payment.method}
+                        </p>
+                      </div>
+                      <button className="text-primary-600 hover:text-primary-900">
+                        <Download size={16} />
+                      </button>
+                    </div>
+                  ))}
+                  <button className="w-full btn btn-secondary text-sm">
+                    Voir tout l'historique
+                  </button>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-8">Aucun paiement</p>
+              )}
+            </div>
+          </div>
+
+          {/* Notifications récentes */}
+          {dashboardData?.recentNotifications && dashboardData.recentNotifications.length > 0 && (
+            <div className="card">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <Bell size={20} className="text-primary-600" />
+                Notifications récentes
+              </h2>
+              <div className="space-y-2">
+                {dashboardData.recentNotifications.map((notification: any, index: number) => (
+                  <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                    <Bell size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">{notification.title}</p>
+                      <p className="text-xs text-gray-600">{notification.message}</p>
+                      <p className="text-xs text-gray-500 mt-1">{formatDate(notification.date)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
-      {(user?.role === 'COACH' || user?.role === 'APPRENANT') && (
+      {user?.role === 'COACH' && (
         <div className="card">
           <h2 className="text-xl font-semibold mb-4">Bienvenue sur EDB</h2>
           <p className="text-gray-600">
