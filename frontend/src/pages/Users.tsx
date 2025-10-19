@@ -6,6 +6,11 @@ import {
 } from 'lucide-react';
 import api from '../lib/api';
 import { useAuthStore } from '../stores/authStore';
+import Pagination from '../components/Pagination';
+import ExportButton from '../components/ExportButton';
+import { usePagination } from '../hooks/usePagination';
+import { useDebounce } from '../hooks/useDebounce';
+import { SkeletonTable } from '../components/Skeleton';
 
 interface UserData {
   id: string; email: string; firstName: string; lastName: string;
@@ -40,8 +45,11 @@ export default function Users() {
     firstName: '', lastName: '', email: '', phone: '', bio: '', role: 'APPRENANT', password: '',
   });
 
+  // Debounce search term to reduce filtering operations
+  const debouncedSearch = useDebounce(searchTerm, 300);
+
   useEffect(() => { fetchUsers(); }, []);
-  useEffect(() => { filterUsers(); }, [users, searchTerm, roleFilter, statusFilter]);
+  useEffect(() => { filterUsers(); }, [users, debouncedSearch, roleFilter, statusFilter]);
 
   const fetchUsers = async () => {
     try {
@@ -57,16 +65,36 @@ export default function Users() {
 
   const filterUsers = () => {
     let filtered = users;
-    if (searchTerm) {
+    if (debouncedSearch) {
       filtered = filtered.filter((u) =>
-        u.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchTerm.toLowerCase())
+        u.firstName.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        u.lastName.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        u.email.toLowerCase().includes(debouncedSearch.toLowerCase())
       );
     }
     if (roleFilter) filtered = filtered.filter((u) => u.role === roleFilter);
     if (statusFilter) filtered = filtered.filter((u) => u.status === statusFilter);
     setFilteredUsers(filtered);
+  };
+
+  // Pagination hook
+  const pagination = usePagination({
+    data: filteredUsers,
+    initialPageSize: 10,
+  });
+
+  // Prepare data for export
+  const prepareExportData = () => {
+    return filteredUsers.map(user => ({
+      Prénom: user.firstName,
+      Nom: user.lastName,
+      Email: user.email,
+      Téléphone: user.phone || 'N/A',
+      Rôle: USER_ROLES[user.role as keyof typeof USER_ROLES],
+      Statut: USER_STATUS[user.status as keyof typeof USER_STATUS],
+      'Email Vérifié': user.emailVerified ? 'Oui' : 'Non',
+      'Date d\'inscription': formatDate(user.createdAt),
+    }));
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -155,18 +183,28 @@ export default function Users() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Utilisateurs</h1>
-          <p className="text-gray-600 mt-1">Gérez les utilisateurs de la plateforme</p>
+          <p className="text-gray-600 mt-1">
+            {filteredUsers.length} utilisateur{filteredUsers.length > 1 ? 's' : ''}
+            {filteredUsers.length !== users.length && ` (sur ${users.length})`}
+          </p>
         </div>
-        <button
-          onClick={() => {
-            setFormData({ firstName: '', lastName: '', email: '', phone: '', bio: '', role: 'APPRENANT', password: '' });
-            setShowCreateModal(true);
-          }}
-          className="btn btn-primary flex items-center gap-2"
-        >
-          <User size={20} />
-          Nouvel utilisateur
-        </button>
+        <div className="flex gap-3">
+          <ExportButton
+            data={prepareExportData()}
+            filename="utilisateurs_edb"
+            formats={['csv', 'excel']}
+          />
+          <button
+            onClick={() => {
+              setFormData({ firstName: '', lastName: '', email: '', phone: '', bio: '', role: 'APPRENANT', password: '' });
+              setShowCreateModal(true);
+            }}
+            className="btn btn-primary flex items-center gap-2"
+          >
+            <User size={20} />
+            Nouvel utilisateur
+          </button>
+        </div>
       </div>
 
       <div className="card mb-6">
@@ -192,7 +230,9 @@ export default function Users() {
       </div>
 
       {loading ? (
-        <div className="card"><p className="text-center text-gray-500">Chargement...</p></div>
+        <div className="card">
+          <SkeletonTable rows={10} columns={6} />
+        </div>
       ) : filteredUsers.length === 0 ? (
         <div className="card text-center py-12">
           <UsersIcon size={48} className="mx-auto text-gray-400 mb-4" />
@@ -212,7 +252,7 @@ export default function Users() {
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map((userData) => (
+              {pagination.paginatedData.map((userData) => (
                 <tr key={userData.id} className="border-b hover:bg-gray-50">
                   <td className="p-4">
                     <div className="flex items-center gap-3">
@@ -276,6 +316,16 @@ export default function Users() {
               ))}
             </tbody>
           </table>
+
+          {/* Pagination */}
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.totalItems}
+            pageSize={pagination.pageSize}
+            onPageChange={pagination.setPage}
+            onPageSizeChange={pagination.setPageSize}
+          />
         </div>
       )}
 
