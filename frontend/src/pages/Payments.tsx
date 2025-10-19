@@ -114,7 +114,9 @@ export default function Payments() {
   const [methodFilter, setMethodFilter] = useState<string>('');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showChangeStatusModal, setShowChangeStatusModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentData | null>(null);
+  const [newStatus, setNewStatus] = useState('');
   const [formData, setFormData] = useState({
     userId: '',
     subscriptionId: '',
@@ -220,13 +222,45 @@ export default function Payments() {
         amount: parseFloat(formData.amount),
         method: formData.method,
       });
-      toast.success('Paiement initié avec succès');
+      toast.success('Paiement initié avec succès (statut: EN ATTENTE)');
       setShowCreateModal(false);
       setFormData({ userId: '', subscriptionId: '', amount: '', method: 'CINETPAY' });
       fetchPayments();
       fetchStats();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Erreur lors de l\'initiation du paiement');
+    }
+  };
+
+  const handleChangeStatus = async () => {
+    if (!selectedPayment || !newStatus) {
+      toast.error('Veuillez sélectionner un statut');
+      return;
+    }
+
+    try {
+      await api.put(`/payments/${selectedPayment.id}/status`, { status: newStatus });
+      toast.success('Statut du paiement mis à jour avec succès');
+      setShowChangeStatusModal(false);
+      setNewStatus('');
+      setSelectedPayment(null);
+      fetchPayments();
+      fetchStats();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Erreur lors du changement de statut');
+    }
+  };
+
+  const handleDelete = async (paymentId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce paiement ?')) return;
+
+    try {
+      await api.delete(`/payments/${paymentId}`);
+      toast.success('Paiement supprimé avec succès');
+      fetchPayments();
+      fetchStats();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Erreur lors de la suppression');
     }
   };
 
@@ -500,16 +534,36 @@ export default function Payments() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <button
-                        onClick={() => {
-                          setSelectedPayment(payment);
-                          setShowDetailsModal(true);
-                        }}
-                        className="text-primary-600 hover:text-primary-900"
-                        title="Voir les détails"
-                      >
-                        <Eye size={18} />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setSelectedPayment(payment);
+                            setShowDetailsModal(true);
+                          }}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                          title="Voir les détails"
+                        >
+                          <Eye size={18} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedPayment(payment);
+                            setNewStatus(payment.status);
+                            setShowChangeStatusModal(true);
+                          }}
+                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
+                          title="Changer le statut"
+                        >
+                          <RefreshCw size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(payment.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                          title="Supprimer"
+                        >
+                          <XCircle size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -746,6 +800,69 @@ export default function Payments() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Change Status Modal */}
+      {showChangeStatusModal && selectedPayment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold">Changer le statut du paiement</h2>
+              <button
+                onClick={() => setShowChangeStatusModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-4">
+                  Paiement de <span className="font-medium">{formatCurrency(selectedPayment.amount)}</span> pour{' '}
+                  <span className="font-medium">
+                    {selectedPayment.user?.firstName} {selectedPayment.user?.lastName}
+                  </span>
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nouveau statut *
+                </label>
+                <select
+                  value={newStatus}
+                  onChange={(e) => setNewStatus(e.target.value)}
+                  className="input"
+                  required
+                >
+                  {Object.entries(PAYMENT_STATUS).map(([key, label]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> Le changement de statut aura un impact sur les abonnements et statistiques.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => setShowChangeStatusModal(false)}
+                  className="flex-1 btn btn-secondary"
+                >
+                  Annuler
+                </button>
+                <button onClick={handleChangeStatus} className="flex-1 btn btn-primary">
+                  Confirmer
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

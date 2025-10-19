@@ -14,6 +14,9 @@ import {
   X,
   Send,
   Users as UsersIcon,
+  Plus,
+  Edit,
+  Trash2,
 } from 'lucide-react';
 import api from '../lib/api';
 import { useAuthStore } from '../stores/authStore';
@@ -91,13 +94,29 @@ export default function Coaching() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showAssignCoachModal, setShowAssignCoachModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showCreateEditModal, setShowCreateEditModal] = useState(false);
   const [selectedSession, setSelectedSession] = useState<CoachingSession | null>(null);
+  const [editingSession, setEditingSession] = useState<CoachingSession | null>(null);
 
   // Form states
   const [availableCoaches, setAvailableCoaches] = useState<Coach[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+  const [availableCohorts, setAvailableCohorts] = useState<any[]>([]);
   const [selectedCoachId, setSelectedCoachId] = useState('');
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'coach' | 'user'>('user');
+
+  // Create/Edit form
+  const [formData, setFormData] = useState({
+    userId: '',
+    cohortId: '',
+    coachId: '',
+    startDate: '',
+    endDate: '',
+    isFree: true,
+    maxSessions: 12,
+    notes: '',
+  });
 
   const isAdmin = user?.role === 'ADMIN';
   const isCoach = user?.role === 'COACH';

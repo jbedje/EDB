@@ -9,6 +9,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Cohorts from './pages/Cohorts';
 import Coaching from './pages/Coaching';
+import CoachingAdmin from './pages/CoachingAdmin';
 import Subscriptions from './pages/Subscriptions';
 import Payments from './pages/Payments';
 import Users from './pages/Users';
@@ -59,10 +60,11 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="cohorts" element={<Cohorts />} />
             <Route path="coaching" element={<Coaching />} />
+            <Route path="coaching-admin" element={<CoachingAdmin />} />
             <Route path="subscriptions" element={<Subscriptions />} />
             <Route path="payments" element={<Payments />} />
             <Route path="users" element={<Users />} />
-            <Route path="reports" element={<Reports />} />
+            <Route path="reports" element={<Payments />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="plans" element={<Plans />} />
             <Route path="profile" element={<Profile />} />
