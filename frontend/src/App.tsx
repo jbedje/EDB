@@ -1,50 +1,63 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import { useAuthStore } from './stores/authStore';
+import { lazy, Suspense } from 'react';
+import ErrorBoundary from './components/ErrorBoundary';
+import ProtectedRoute from './components/ProtectedRoute';
+import { Skeleton } from './components/Skeleton';
 
-// Pages
+// Public Pages (not lazy loaded for faster initial load)
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import Cohorts from './pages/Cohorts';
-import Coaching from './pages/Coaching';
-import CoachingAdmin from './pages/CoachingAdmin';
-import Subscriptions from './pages/Subscriptions';
-import Payments from './pages/Payments';
-import Users from './pages/Users';
-import Reports from './pages/Reports';
-import Notifications from './pages/Notifications';
-import Plans from './pages/Plans';
-import Profile from './pages/Profile';
-
-// Learner Pages
-import AvailablePlans from './pages/AvailablePlans';
-import MyPayments from './pages/MyPayments';
-
-// Coach Pages
-import MesCohortes from './pages/coach/MesCohortes';
-import Planning from './pages/coach/Planning';
-import SuiviApprenants from './pages/coach/SuiviApprenants';
-import RapportsCoach from './pages/coach/Rapports';
 
 // Layout
 import Layout from './components/Layout';
 
-// Protected Route Component
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated } = useAuthStore();
+// Lazy loaded pages for code splitting
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Cohorts = lazy(() => import('./pages/Cohorts'));
+const Coaching = lazy(() => import('./pages/Coaching'));
+const CoachingAdmin = lazy(() => import('./pages/CoachingAdmin'));
+const Subscriptions = lazy(() => import('./pages/Subscriptions'));
+const Payments = lazy(() => import('./pages/Payments'));
+const Users = lazy(() => import('./pages/Users'));
+const Reports = lazy(() => import('./pages/Reports'));
+const Notifications = lazy(() => import('./pages/Notifications'));
+const Plans = lazy(() => import('./pages/Plans'));
+const Profile = lazy(() => import('./pages/Profile'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
+// Learner Pages (lazy loaded)
+const AvailablePlans = lazy(() => import('./pages/AvailablePlans'));
+const MyPayments = lazy(() => import('./pages/MyPayments'));
 
-  return <>{children}</>;
-};
+// Coach Pages (lazy loaded)
+const MesCohortes = lazy(() => import('./pages/coach/MesCohortes'));
+const Planning = lazy(() => import('./pages/coach/Planning'));
+const SuiviApprenants = lazy(() => import('./pages/coach/SuiviApprenants'));
+const RapportsCoach = lazy(() => import('./pages/coach/Rapports'));
+
+/**
+ * Loading fallback component
+ */
+const PageLoader = () => (
+  <div className="p-6 space-y-6">
+    <Skeleton variant="text" width="40%" height={32} />
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="card space-y-2">
+          <Skeleton variant="text" width="60%" />
+          <Skeleton variant="text" width="40%" height={32} />
+        </div>
+      ))}
+    </div>
+    <Skeleton variant="rectangular" height={400} className="rounded-lg" />
+  </div>
+);
 
 function App() {
   return (
-    <>
+    <ErrorBoundary>
       <BrowserRouter>
         <Routes>
           {/* Public Routes */}
@@ -61,35 +74,190 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<Dashboard />} />
-            <Route path="cohorts" element={<Cohorts />} />
-            <Route path="coaching" element={<Coaching />} />
-            <Route path="coaching-admin" element={<CoachingAdmin />} />
-            <Route path="subscriptions" element={<Subscriptions />} />
-            <Route path="payments" element={<Payments />} />
-            <Route path="users" element={<Users />} />
-            <Route path="reports" element={<Payments />} />
-            <Route path="notifications" element={<Notifications />} />
-            <Route path="plans" element={<Plans />} />
-            <Route path="profile" element={<Profile />} />
+            {/* Dashboard - Accessible by all authenticated users */}
+            <Route
+              index
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <Dashboard />
+                </Suspense>
+              }
+            />
+
+            {/* Common Routes */}
+            <Route
+              path="cohorts"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <Cohorts />
+                </Suspense>
+              }
+            />
+            <Route
+              path="coaching"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <Coaching />
+                </Suspense>
+              }
+            />
+            <Route
+              path="subscriptions"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <Subscriptions />
+                </Suspense>
+              }
+            />
+            <Route
+              path="profile"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <Profile />
+                </Suspense>
+              }
+            />
+
+            {/* Admin Only Routes */}
+            <Route
+              path="coaching-admin"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedRoute allowedRoles={['ADMIN']}>
+                    <CoachingAdmin />
+                  </ProtectedRoute>
+                </Suspense>
+              }
+            />
+            <Route
+              path="payments"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedRoute allowedRoles={['ADMIN']}>
+                    <Payments />
+                  </ProtectedRoute>
+                </Suspense>
+              }
+            />
+            <Route
+              path="users"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedRoute allowedRoles={['ADMIN']}>
+                    <Users />
+                  </ProtectedRoute>
+                </Suspense>
+              }
+            />
+            <Route
+              path="reports"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedRoute allowedRoles={['ADMIN']}>
+                    <Reports />
+                  </ProtectedRoute>
+                </Suspense>
+              }
+            />
+            <Route
+              path="notifications"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedRoute allowedRoles={['ADMIN']}>
+                    <Notifications />
+                  </ProtectedRoute>
+                </Suspense>
+              }
+            />
+            <Route
+              path="plans"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedRoute allowedRoles={['ADMIN']}>
+                    <Plans />
+                  </ProtectedRoute>
+                </Suspense>
+              }
+            />
 
             {/* Learner Routes */}
-            <Route path="available-plans" element={<AvailablePlans />} />
-            <Route path="my-payments" element={<MyPayments />} />
+            <Route
+              path="available-plans"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedRoute allowedRoles={['APPRENANT']}>
+                    <AvailablePlans />
+                  </ProtectedRoute>
+                </Suspense>
+              }
+            />
+            <Route
+              path="my-payments"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedRoute allowedRoles={['APPRENANT']}>
+                    <MyPayments />
+                  </ProtectedRoute>
+                </Suspense>
+              }
+            />
 
             {/* Coach Routes */}
-            <Route path="mes-cohortes" element={<MesCohortes />} />
-            <Route path="planning" element={<Planning />} />
-            <Route path="suivi-apprenants" element={<SuiviApprenants />} />
-            <Route path="rapports-coach" element={<RapportsCoach />} />
+            <Route
+              path="mes-cohortes"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedRoute allowedRoles={['COACH']}>
+                    <MesCohortes />
+                  </ProtectedRoute>
+                </Suspense>
+              }
+            />
+            <Route
+              path="planning"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedRoute allowedRoles={['COACH']}>
+                    <Planning />
+                  </ProtectedRoute>
+                </Suspense>
+              }
+            />
+            <Route
+              path="suivi-apprenants"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedRoute allowedRoles={['COACH']}>
+                    <SuiviApprenants />
+                  </ProtectedRoute>
+                </Suspense>
+              }
+            />
+            <Route
+              path="rapports-coach"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedRoute allowedRoles={['COACH']}>
+                    <RapportsCoach />
+                  </ProtectedRoute>
+                </Suspense>
+              }
+            />
           </Route>
 
-          {/* Catch all */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* 404 Not Found */}
+          <Route
+            path="*"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <NotFound />
+              </Suspense>
+            }
+          />
         </Routes>
       </BrowserRouter>
       <Toaster position="top-right" richColors />
-    </>
+    </ErrorBoundary>
   );
 }
 
